@@ -5,6 +5,8 @@ import com.campodepreubas.apirest.hateoas.apiresthateoastest.model.enums.Periodi
 import lombok.Builder;
 import lombok.Data;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import java.sql.Timestamp;
 import java.util.List;
 
 @Data
@@ -12,5 +14,5 @@ import java.util.List;
 public final class PeriodTaskRequest {
 
     private String name;
-    private PeriodicityEnum periodicity;
+    private Integer periodicity;
 }

@@ -1,15 +1,26 @@
 package com.campodepreubas.apirest.hateoas.apiresthateoastest.model.enums;
 
 public enum PeriodicityEnum {
-    DAYLY,
-    WEEKLY,
-    BIWEEKLY,
-    THREEWEEKLY,
-    MONTHLY,
-    BIMONTHLY,
-    QUARTERLY,
-    SEMIANNUAL,
-    ANNUAL,
-    YEARLY,
-    PUNTUAL
+    DAYLY("Diariamente"),
+    WEEKLY("Semanalmente"),
+    BIWEEKLY("Quincenalmente"),
+    THREEWEEKLY("Tres semanas"),
+    MONTHLY("Mensualmente"),
+    BIMONTHLY("Bimensualmente"),
+    QUARTERLY("Trimestralmente"),
+    SEMIANNUAL("Semestralmente"),
+    ANNUAL("Anualmente"),
+    PUNTUAL("Puntual");
+
+    private String description;
+
+    PeriodicityEnum(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
+    }
 }
+
+

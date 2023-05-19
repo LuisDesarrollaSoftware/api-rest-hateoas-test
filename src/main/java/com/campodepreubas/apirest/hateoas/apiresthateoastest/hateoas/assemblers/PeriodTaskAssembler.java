@@ -20,7 +20,6 @@ public class PeriodTaskAssembler extends RepresentationModelAssemblerSupport<Per
     @Override
     public PeriodTaskResource toModel(PeriodTask entity) {
         PeriodTaskResource resource = instantiateModel(entity);
-        resource.setId(entity.getId());
         resource.setName(entity.getName());
         resource.setPeriodicity(entity.getPeriodicity());;
 

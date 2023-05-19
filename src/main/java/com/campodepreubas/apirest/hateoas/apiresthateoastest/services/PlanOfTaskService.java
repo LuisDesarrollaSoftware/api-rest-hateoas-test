@@ -2,9 +2,12 @@ package com.campodepreubas.apirest.hateoas.apiresthateoastest.services;
 
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.hateoas.assemblers.PlanOfTaskAssembler;
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.hateoas.resources.PlanOfTaskResource;
+import com.campodepreubas.apirest.hateoas.apiresthateoastest.hateoas.resources.TaskResource;
+import com.campodepreubas.apirest.hateoas.apiresthateoastest.model.PeriodTask;
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.model.PlanOfTask;
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.model.Task;
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.model.dtos.request.PlanOfTaskRequest;
+import com.campodepreubas.apirest.hateoas.apiresthateoastest.model.dtos.request.TaskRequest;
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.repository.PlanOfTaskRepository;
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +23,7 @@ import java.util.Objects;
 public class PlanOfTaskService {
 
     @Autowired
-    private TaskRepository taskRepository;
+    private TaskService taskService;
 
     @Autowired
     private PlanOfTaskRepository planOfTaskRepository;
@@ -28,19 +31,17 @@ public class PlanOfTaskService {
     @Autowired
     private PlanOfTaskAssembler planOfTaskResourceAssembler;
 
-    public ResponseEntity<List<PlanOfTaskResource>> findAll() {
-        return ResponseEntity.ok(planOfTaskRepository.findAll().stream().map(planOfTaskResourceAssembler::toModel).toList());
+    public List<PlanOfTaskResource> findAll() {
+        return planOfTaskRepository.findAll().stream().map(planOfTaskResourceAssembler::toModel).toList();
     }
 
-    public ResponseEntity<PlanOfTaskResource> findById(Long id) {
+    public PlanOfTaskResource findById(Long id) {
         return planOfTaskRepository.findById(id)
                 .map(planOfTaskResourceAssembler::toModel)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-
+                .orElseThrow(()-> new RuntimeException("PlanOfTask not found"));
     }
 
-    public ResponseEntity<PlanOfTaskResource> save(PlanOfTaskRequest planOfUser) {
+    public PlanOfTaskResource save(PlanOfTaskRequest planOfUser) {
 
         PlanOfTask planOfTask= PlanOfTask.builder()
                 .name(planOfUser.getName())
@@ -50,12 +51,10 @@ public class PlanOfTaskService {
         PlanOfTask saved = planOfTaskRepository.save(planOfTask);
         PlanOfTaskResource resource = planOfTaskResourceAssembler.toModel(saved);
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(resource);
+        return resource;
     }
 
-    public ResponseEntity<PlanOfTaskResource> update(Long id, PlanOfTaskRequest planOfUserRequest){
+    public PlanOfTaskResource update(Long id, PlanOfTaskRequest planOfUserRequest){
 
         if (Objects.isNull(planOfUserRequest)) {
             throw new IllegalArgumentException("PlanOfTaskRequest is null");
@@ -77,22 +76,32 @@ public class PlanOfTaskService {
 
         PlanOfTaskResource resource = planOfTaskResourceAssembler.toModel(saved);
 
-        return ResponseEntity.accepted().body(resource);
+        return resource;
     }
 
-    public ResponseEntity<PlanOfTaskResource> delete(Long id) {
+    public Boolean delete(Long id) {
         return planOfTaskRepository.findById(id)
                 .map(record -> {
                     planOfTaskRepository.deleteById(id);
-                    return ResponseEntity.ok().body(planOfTaskResourceAssembler.toModel(record));
-                }).orElse(ResponseEntity.notFound().build());
+                    planOfTaskResourceAssembler.toModel(record);
+                    return true;
+                }).orElse(false);
     }
 
 
-    public ResponseEntity<PlanOfTaskResource> addTaskInPlan(Long id, Long idTask) {
-        Task task = taskRepository.findById(idTask).orElseThrow(
-                () -> new IllegalArgumentException("Task not found")
-        );
+    public PlanOfTaskResource addTaskInPlan(Long id, Long idTask) {
+        TaskResource taskResource = taskService.findById(idTask);
+        PeriodTask periodTask = PeriodTask.builder()
+                .periodicity(taskResource.getPeriod().getPeriodicity())
+                .name(taskResource.getPeriod().getName())
+                .build();
+
+        Task task = Task.builder()
+                .id(idTask)
+                .name(taskResource.getName())
+                .effort(taskResource.getEffort())
+                .period(periodTask)
+                .build();
 
         PlanOfTask planOfTask = planOfTaskRepository.findById(id).orElseThrow(
                 () -> new IllegalArgumentException("PlanOfTask not found")
@@ -102,12 +111,12 @@ public class PlanOfTaskService {
 
             planOfTask.getTask().add(task);
             PlanOfTask updated = planOfTaskRepository.save(planOfTask);
-            return ResponseEntity.ok().body(planOfTaskResourceAssembler.toModel(updated));
+            return planOfTaskResourceAssembler.toModel(updated);
         }
-        return ResponseEntity.ok().body(planOfTaskResourceAssembler.toModel(planOfTask));
+        return planOfTaskResourceAssembler.toModel(planOfTask);
     }
 
-    public ResponseEntity<PlanOfTaskResource> removeTaskInPlan(Long id, Long idTask) {
+    public Boolean removeTaskInPlan(Long id, Long idTask) {
 
 
         return planOfTaskRepository.findById(id)
@@ -121,7 +130,30 @@ public class PlanOfTaskService {
 
                     PlanOfTask updated = planOfTaskRepository.save(record);
 
-                    return ResponseEntity.ok().body(planOfTaskResourceAssembler.toModel(updated));
-                }).orElse(ResponseEntity.notFound().build());
+                   ResponseEntity.ok().body(planOfTaskResourceAssembler.toModel(updated));
+                   return true;
+                }).orElse(false);
+    }
+
+    public PlanOfTaskResource patchTaskInPlan(Long id, Long idTask) {
+            PlanOfTask planOfTask =  planOfTaskRepository.findById(id).orElseThrow(
+                    () -> new IllegalArgumentException("PlanOfTask not found")
+            );
+        TaskResource taskResource = taskService.findById(idTask);
+        PeriodTask periodTask = PeriodTask.builder()
+                .periodicity(taskResource.getPeriod().getPeriodicity())
+                .name(taskResource.getPeriod().getName())
+                .build();
+
+        Task task = Task.builder()
+                .id(idTask)
+                .name(taskResource.getName())
+                .effort(taskResource.getEffort())
+                .period(periodTask)
+                .build();
+        planOfTask.getTask().add(task);
+
+        PlanOfTask updated = planOfTaskRepository.saveAndFlush(planOfTask);
+        return planOfTaskResourceAssembler.toModel(updated);
     }
 }

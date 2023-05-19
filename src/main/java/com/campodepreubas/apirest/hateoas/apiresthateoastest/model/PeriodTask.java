@@ -10,6 +10,7 @@ import org.hibernate.annotations.GenerationTime;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.List;
 
 @Entity
@@ -17,17 +18,12 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public @Data class PeriodTask implements Serializable {
-    @Id
-    @Column(name = "id", nullable = false)
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Generated(GenerationTime.ALWAYS)
-    private Long id;
 
     @Column
     private String name;
-
-    @Column
-    private PeriodicityEnum periodicity;
+    @Id
+    @Column(name = "periodicity", nullable = false)
+    private Integer periodicity;
 
 
 

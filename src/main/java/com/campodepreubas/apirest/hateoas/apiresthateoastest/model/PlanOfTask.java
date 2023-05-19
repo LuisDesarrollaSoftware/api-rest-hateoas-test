@@ -38,9 +38,4 @@ public @Data class PlanOfTask implements Serializable {
 
     @Column
     private Timestamp startDate;
-
-
-    public void addTask(Task task) {
-        this.task.add(task);
-    }
 }

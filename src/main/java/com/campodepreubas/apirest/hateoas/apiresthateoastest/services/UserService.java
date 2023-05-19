@@ -7,6 +7,7 @@ import com.campodepreubas.apirest.hateoas.apiresthateoastest.model.dtos.request.
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.model.dtos.response.UserResponse;
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -22,17 +23,17 @@ public class UserService {
     @Autowired
     private UserAssembler userResourceAssembler;
 
-    public ResponseEntity<List<UserResource>>  findAll() {
-        return ResponseEntity.ok(userRepository.findAll().stream().map(userResourceAssembler::toModel).collect(Collectors.toList()));
+    public List<UserResource>  findAll() {
+        return userRepository.findAll().stream().map(userResourceAssembler::toModel).collect(Collectors.toList());
     }
 
-    public ResponseEntity<UserResource> findById(Long id) {
+    public UserResource findById(Long id) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
         UserResource resource = userResourceAssembler.toModel(user);
-        return ResponseEntity.ok(resource);
+        return resource;
     }
 
-    public ResponseEntity<UserResource> save(UserRequest userRequest) {
+    public UserResource save(UserRequest userRequest) {
         User user = User.builder()
                 .name(userRequest.getName())
                 .email(userRequest.getEmail())
@@ -41,10 +42,10 @@ public class UserService {
         User saved = userRepository.save(user);
         UserResource resource = userResourceAssembler.toModel(saved);
 
-        return ResponseEntity.ok(resource);
+        return resource;
     }
 
-    public ResponseEntity<UserResource> update(Long id, UserRequest userRequest) {
+    public UserResource update(Long id, UserRequest userRequest) {
 
         if(!userRepository.existsById(id)) {
             throw new RuntimeException("User not found");
@@ -58,18 +59,15 @@ public class UserService {
         User saved = userRepository.save(user);
         UserResource resource = userResourceAssembler.toModel(saved);
 
-        return ResponseEntity.accepted().body(resource);
+        return resource;
     }
 
-    public ResponseEntity<Void> delete(Long id) {
+    public Boolean delete(Long id) {
 
-        if(!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found");
-        }
-
-        userRepository.deleteById(id);
-
-        return ResponseEntity.accepted().build();
+     return userRepository.findById(id).map(user -> {
+         userRepository.delete(user);
+         return true;
+     }).orElse(false);
     }
 
 

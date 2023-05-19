@@ -1,11 +1,11 @@
 package com.campodepreubas.apirest.hateoas.apiresthateoastest.services;
 
-import com.campodepreubas.apirest.hateoas.apiresthateoastest.model.PeriodTask;
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.hateoas.assemblers.PeriodTaskAssembler;
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.hateoas.resources.PeriodTaskResource;
+import com.campodepreubas.apirest.hateoas.apiresthateoastest.model.PeriodTask;
+import com.campodepreubas.apirest.hateoas.apiresthateoastest.model.dtos.request.PeriodTaskRequest;
 import com.campodepreubas.apirest.hateoas.apiresthateoastest.repository.PeriodRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,37 +19,43 @@ public class PeriodService {
     @Autowired
     private PeriodTaskAssembler assembler;
 
-    public ResponseEntity<List<PeriodTaskResource>> findAll() {
-        return ResponseEntity.ok(periodRepository.findAll().stream().map(assembler::toModel).toList());
+    public List<PeriodTaskResource> findAll() {
+        return periodRepository.findAll().stream().map(assembler::toModel).toList();
     }
 
-    public ResponseEntity<PeriodTaskResource> findById(Long id) {
+    public PeriodTaskResource findById(Integer id) {
         return periodRepository.findById(id)
-                .map(assembler::toModel)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-
+                .map(assembler::toModel).orElseThrow(
+                        () -> new RuntimeException("Period not found")
+                );
     }
 
-    public ResponseEntity<PeriodTaskResource> save(PeriodTask period) {
-        return ResponseEntity.ok().body(assembler.toModel(periodRepository.save(period)));
+    public PeriodTaskResource save(PeriodTaskRequest periodRequest) {
+        PeriodTask period = PeriodTask.builder()
+                .name(periodRequest.getName())
+                .periodicity(periodRequest.getPeriodicity())
+                .build();
+
+        return assembler.toModel(periodRepository.save(period));
     }
 
-    public ResponseEntity<PeriodTaskResource> update(Long id, PeriodTask period) {
+    public PeriodTaskResource update(Integer id, PeriodTaskRequest periodRequest) {
         return periodRepository.findById(id)
                 .map(record -> {
-                    record.setName(period.getName());
-                    record.setPeriodicity(period.getPeriodicity());
+                    record.setName(periodRequest.getName());
+                    record.setPeriodicity(periodRequest.getPeriodicity());
                     PeriodTask updated = periodRepository.save(record);
-                    return ResponseEntity.ok().body(assembler.toModel(updated));
-                }).orElse(ResponseEntity.notFound().build());
+                    return assembler.toModel(updated);
+                }).orElseThrow(() -> new RuntimeException("Period not found") {
+                });
     }
 
-    public ResponseEntity<PeriodTaskResource> delete(Long id) {
+    public Boolean delete(Integer id) {
         return periodRepository.findById(id)
                 .map(record -> {
                     periodRepository.deleteById(id);
-                    return ResponseEntity.ok().body(assembler.toModel(record));
-                }).orElse(ResponseEntity.notFound().build());
+                    return true;
+                }).orElse(false);
+
     }
 }
